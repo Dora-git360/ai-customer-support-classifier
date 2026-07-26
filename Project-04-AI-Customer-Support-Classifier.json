@@ -1,0 +1,394 @@
+{
+  "name": "Project 4 - AI Customer Support Classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=customer-ticket",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        -416
+      ],
+      "id": "95a8fc52-d903-41a3-bf1f-0f0bca4a016f",
+      "name": "Webhook",
+      "webhookId": "6da21a3c-d96b-4535-b2a0-88ade08a78a3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1105cfbc-891e-453d-83f7-b582d0f96f13",
+              "name": "CustomerName",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "399f9cae-c4bd-481f-b801-8bf79cced345",
+              "name": "Email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "63b39d94-f248-42a9-b316-0300eb67bd61",
+              "name": "Issue",
+              "value": "={{ $json.body.issue }}",
+              "type": "string"
+            },
+            {
+              "id": "332696b5-c271-48f1-9b88-5b55d9591099",
+              "name": "Message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -688,
+        -416
+      ],
+      "id": "8ac7a162-2e3f-4268-97dc-520bc33ae3f3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert customer support manager.\n\nAnalyze this support ticket.\n\nCustomer Name:\n{{ $json.CustomerName }}\n\nIssue:\n{{ $json.Issue }}\n\nMessage:\n{{ $json.Message }}\n\nReturn ONLY valid JSON in this format:\n\n{\n  \"category\": \"\",\n  \"priority\": \"\",\n  \"summary\": \"\"\n}\n\nRules:\n\nCategory must be one of:\nBilling\nTechnical\nAccount\nGeneral\n\nPriority must be one of:\nHigh\nMedium\nLow\n\nSummary must be under 20 words."
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -464,
+        -416
+      ],
+      "id": "6ca471c9-e159-4c05-9108-ad4a50fcd283",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "tqaoFK5NpSihtVF8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "77a985d6-fd5e-42b1-8704-0ee8530547a5",
+              "leftValue": "={{ $json.content.parts[0].text }}",
+              "rightValue": "High",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -64,
+        -416
+      ],
+      "id": "6cf5fb20-4ea3-4c3a-aa1d-66e768d8a997",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        816,
+        -496
+      ],
+      "id": "14a9ae04-93d0-4ae6-b6e3-3e625e20e2a9",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        816,
+        -304
+      ],
+      "id": "4e03116c-24e8-42d1-8ce9-ab603ab9a642",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c31a005-25fc-401c-8a9e-b682a5c2612e",
+              "name": "customer",
+              "value": "={{ $('Edit Fields').item.json.CustomerName }}",
+              "type": "string"
+            },
+            {
+              "id": "788582b3-f8b4-42a3-8838-c36176ec1b5e",
+              "name": "email",
+              "value": "={{ $('Edit Fields').item.json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "6a230bdb-d12e-4b4a-8798-9b7aa4d966b1",
+              "name": "issue",
+              "value": "={{ $('Edit Fields').item.json.Issue }}",
+              "type": "string"
+            },
+            {
+              "id": "dfb9dadc-740b-48ae-9257-03c3eef2adb9",
+              "name": "category",
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).category }}",
+              "type": "string"
+            },
+            {
+              "id": "bb8f1cb9-4d41-4faf-8a5e-fb420d25a308",
+              "name": "priority",
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).priority }}",
+              "type": "string"
+            },
+            {
+              "id": "0c8161c2-eef3-463c-b2ef-0a46ac8052a6",
+              "name": "summary",
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        -576
+      ],
+      "id": "6866e67a-ea17-41b4-a5e0-20acebdf2842",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1VOR6vQNTfNYVSSyTbEVJ9qHSfUeyrcwyPrJkvVR6xlk",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "customer",
+              "displayName": "customer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "issue",
+              "displayName": "issue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        -576
+      ],
+      "id": "7e741614-066d-49e4-bea3-5591189707c7",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "ta7ulGd5H5UkP0CV",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ca452476-27ac-4fb7-add8-46b0443c64fd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "388594768cda9628d288e759936b257db188b4bdb5b2d4d1d67ecf434608a591"
+  },
+  "nodeGroups": [],
+  "id": "xRKGVR9yYWLVhvWH",
+  "tags": []
+}
